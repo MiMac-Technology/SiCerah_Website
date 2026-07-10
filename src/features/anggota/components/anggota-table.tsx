@@ -62,7 +62,8 @@ export function AnggotaTable({ data, disabled }: AnggotaTableProps) {
             title: 'Status',
             options: [
               { label: 'Aktif', value: 'aktif' },
-              { label: 'Nonaktif', value: 'nonaktif' },
+              { label: 'Pasif', value: 'pasif' },
+              { label: 'Keluar', value: 'keluar' },
             ],
           },
         ]}

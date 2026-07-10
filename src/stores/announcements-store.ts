@@ -12,6 +12,14 @@ export type AnnouncementCategory =
   | 'Pengeluaran Besar'
   | 'Umum'
 
+export type AnnouncementChannel = 'in-app' | 'wa' | 'keduanya'
+
+export const CHANNEL_LABELS: Record<AnnouncementChannel, string> = {
+  'in-app': 'Notif In-App',
+  wa: 'WA Blast',
+  keduanya: 'In-App + WA',
+}
+
 export type Announcement = {
   id: string
   title: string
@@ -20,13 +28,19 @@ export type Announcement = {
   photoDataUrl?: string
   published: boolean
   authorRole: Role
+  channel?: AnnouncementChannel
+  /** Jika diisi dan masih di masa depan, pengumuman berstatus terjadwal. */
+  scheduledAt?: string
+  readCount?: number
+  totalRecipients?: number
+  reminderSentAt?: string
   createdAt: string
   updatedAt: string
 }
 
 export type AnnouncementInput = Pick<
   Announcement,
-  'title' | 'content' | 'category' | 'photoDataUrl'
+  'title' | 'content' | 'category' | 'photoDataUrl' | 'channel' | 'scheduledAt'
 >
 
 type AnnouncementsState = {
@@ -39,6 +53,8 @@ type AnnouncementsState = {
   ) => void
   togglePublish: (id: string, actorRole: Role) => void
   deleteAnnouncement: (id: string, actorRole: Role) => void
+  /** Kirim reminder ke anggota yang belum membaca (simulasi WA/in-app). */
+  sendReadReminder: (id: string, actorRole: Role) => void
 }
 
 export const ANNOUNCEMENT_CATEGORIES: AnnouncementCategory[] = [
@@ -60,7 +76,14 @@ function seedAnnouncements(): Announcement[] {
       category: faker.helpers.arrayElement(ANNOUNCEMENT_CATEGORIES),
       photoDataUrl: undefined,
       published: faker.datatype.boolean(0.8),
-      authorRole: 'sekretaris',
+      authorRole: 'sekretaris' as const,
+      channel: faker.helpers.arrayElement<AnnouncementChannel>([
+        'in-app',
+        'wa',
+        'keduanya',
+      ]),
+      readCount: faker.number.int({ min: 3, max: 28 }),
+      totalRecipients: 30,
       createdAt: createdAt.toISOString(),
       updatedAt: createdAt.toISOString(),
     }
@@ -73,11 +96,15 @@ export const useAnnouncementsStore = create<AnnouncementsState>()(
       announcements: seedAnnouncements(),
       createAnnouncement: (data, actorRole) => {
         const now = new Date().toISOString()
+        const isScheduled =
+          !!data.scheduledAt && new Date(data.scheduledAt) > new Date()
         const announcement: Announcement = {
           ...data,
           id: genId('ann'),
-          published: true,
+          published: !isScheduled,
           authorRole: actorRole,
+          readCount: 0,
+          totalRecipients: 30,
           createdAt: now,
           updatedAt: now,
         }
@@ -125,6 +152,22 @@ export const useAnnouncementsStore = create<AnnouncementsState>()(
           activeRole: actorRole,
           actorLabel: 'Sekretaris',
           action: 'Mengubah status publikasi pengumuman',
+          module: 'pengumuman',
+          targetId: id,
+        })
+      },
+      sendReadReminder: (id, actorRole) => {
+        set((state) => ({
+          announcements: state.announcements.map((a) =>
+            a.id === id
+              ? { ...a, reminderSentAt: new Date().toISOString() }
+              : a
+          ),
+        }))
+        useAuditStore.getState().logAction({
+          activeRole: actorRole,
+          actorLabel: 'Sekretaris',
+          action: 'Mengirim reminder pengumuman ke anggota yang belum membaca',
           module: 'pengumuman',
           targetId: id,
         })

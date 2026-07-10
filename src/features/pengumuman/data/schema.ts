@@ -5,6 +5,8 @@ export const announcementFormSchema = z.object({
   content: z.string().min(1, 'Isi pengumuman wajib diisi'),
   category: z.enum(['Keuangan', 'RAT', 'Kegiatan', 'Pengeluaran Besar', 'Umum']),
   photoDataUrl: z.string().optional(),
+  channel: z.enum(['in-app', 'wa', 'keduanya']),
+  scheduledAt: z.string().optional(),
 })
 
 export type AnnouncementFormValues = z.infer<typeof announcementFormSchema>

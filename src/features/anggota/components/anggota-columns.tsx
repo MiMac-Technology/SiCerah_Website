@@ -3,6 +3,7 @@ import { formatDate } from '@/lib/format'
 import { Badge } from '@/components/ui/badge'
 import { DataTableColumnHeader } from '@/components/data-table'
 import { type Member } from '@/stores/members-store'
+import { STATUS_LABELS, STATUS_VARIANTS } from './anggota-status-dialog'
 import { DataTableRowActions } from './data-table-row-actions'
 
 export function getAnggotaColumns(disabled: boolean): ColumnDef<Member>[] {
@@ -28,10 +29,10 @@ export function getAnggotaColumns(disabled: boolean): ColumnDef<Member>[] {
       header: 'Status',
       cell: ({ row }) => {
         const status = row.getValue('status') as Member['status']
-        return status === 'aktif' ? (
-          <Badge variant='default'>Aktif</Badge>
-        ) : (
-          <Badge variant='secondary'>Nonaktif</Badge>
+        return (
+          <Badge variant={STATUS_VARIANTS[status] ?? 'secondary'}>
+            {STATUS_LABELS[status] ?? status}
+          </Badge>
         )
       },
       filterFn: (row, id, value: string[]) => {

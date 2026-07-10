@@ -6,19 +6,26 @@ import { ProfileDropdown } from '@/components/profile-dropdown'
 import { RoleSwitch } from '@/components/role-switch'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
+import { DelegationCard } from '@/components/delegation-card'
+import { OverdueApprovalsBanner } from '@/components/overdue-approvals-banner'
 import { useRoleAccess } from '@/hooks/use-role-access'
 import { useApprovalsStore } from '@/stores/approvals-store'
+import { isDelegateFor, useDelegationStore } from '@/stores/delegation-store'
 import { ApprovalDetailSheet } from './components/approval-detail-sheet'
 import { ApprovalList } from './components/approval-list'
 import { ApprovalProvider } from './components/approval-provider'
 
 export function Approval() {
-  const { activeRole, hasAccess } = useRoleAccess([
+  const { activeRole, hasAccess: baseAccess } = useRoleAccess([
     'bendahara',
     'sekretaris',
     'ketua',
   ])
   const approvals = useApprovalsStore((s) => s.approvals)
+  const delegation = useDelegationStore((s) => s.delegation)
+  const holdsDelegation = isDelegateFor(delegation, activeRole, 'pengeluaran')
+  const hasAccess = baseAccess || holdsDelegation
+  const isKetua = activeRole === 'ketua'
 
   return (
     <ApprovalProvider>
@@ -40,7 +47,11 @@ export function Approval() {
           </p>
         </div>
         {!hasAccess && <AccessRestrictedBanner activeRole={activeRole} />}
-        <ApprovalList data={approvals} />
+        {(isKetua || holdsDelegation) && <OverdueApprovalsBanner />}
+        <div className='space-y-6'>
+          {isKetua && <DelegationCard />}
+          <ApprovalList data={approvals} />
+        </div>
       </Main>
       <ApprovalDetailSheet />
     </ApprovalProvider>

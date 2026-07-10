@@ -17,7 +17,6 @@ type DataTableRowActionsProps = {
 
 export function DataTableRowActions({ row, disabled }: DataTableRowActionsProps) {
   const { setOpen, setCurrentRow } = useAnggota()
-  const isActive = row.original.status === 'aktif'
 
   return (
     <DropdownMenu>
@@ -43,13 +42,12 @@ export function DataTableRowActions({ row, disabled }: DataTableRowActionsProps)
         </DropdownMenuItem>
         <DropdownMenuItem
           disabled={disabled}
-          variant={isActive ? 'destructive' : 'default'}
           onClick={() => {
             setCurrentRow(row.original)
             setOpen('deactivate')
           }}
         >
-          {isActive ? 'Nonaktifkan' : 'Aktifkan kembali'}
+          Ubah Status
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

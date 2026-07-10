@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { useAuditStore } from '@/stores/audit-store'
 
 export type ShuConfig = {
   koperasiName: string
@@ -13,6 +14,11 @@ export type ShuConfig = {
   approvalThreshold: number
   updatedAt: string
   updatedBy: string
+  /** Setelah RAT, Ketua mengunci parameter — tak bisa diubah sampai RAT berikutnya. */
+  locked?: boolean
+  lockedAt?: string
+  lockedBy?: string
+  lockedUntilLabel?: string
 }
 
 type ShuConfigState = {
@@ -21,6 +27,8 @@ type ShuConfigState = {
     partial: Partial<Omit<ShuConfig, 'updatedAt'>>,
     updatedBy: string
   ) => void
+  lockParameters: (lockedUntilLabel: string) => void
+  unlockParameters: () => void
 }
 
 const DEFAULT_CONFIG: ShuConfig = {
@@ -49,6 +57,40 @@ export const useShuConfigStore = create<ShuConfigState>()(
             updatedBy,
           },
         })),
+      lockParameters: (lockedUntilLabel) => {
+        set((state) => ({
+          config: {
+            ...state.config,
+            locked: true,
+            lockedAt: new Date().toISOString(),
+            lockedBy: 'Ketua',
+            lockedUntilLabel,
+          },
+        }))
+        useAuditStore.getState().logAction({
+          activeRole: 'ketua',
+          actorLabel: 'Ketua',
+          action: `Mengunci parameter SHU & anggaran tahunan (hingga ${lockedUntilLabel})`,
+          module: 'shu-config',
+        })
+      },
+      unlockParameters: () => {
+        set((state) => ({
+          config: {
+            ...state.config,
+            locked: false,
+            lockedAt: undefined,
+            lockedBy: undefined,
+            lockedUntilLabel: undefined,
+          },
+        }))
+        useAuditStore.getState().logAction({
+          activeRole: 'ketua',
+          actorLabel: 'Ketua',
+          action: 'Membuka kunci parameter tahunan (pasca-RAT)',
+          module: 'shu-config',
+        })
+      },
     }),
     { name: 'sicerah-shu-config-store' }
   )

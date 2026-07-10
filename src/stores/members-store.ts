@@ -5,7 +5,14 @@ import { genId } from '@/lib/id'
 import { useAuditStore } from '@/stores/audit-store'
 import { type Role } from '@/config/roles'
 
-export type MemberStatus = 'aktif' | 'nonaktif'
+export type MemberStatus = 'aktif' | 'pasif' | 'keluar'
+
+export type StatusChange = {
+  status: MemberStatus
+  reason: string
+  changedAt: string
+  changedBy: string
+}
 
 export type Member = {
   id: string
@@ -20,6 +27,7 @@ export type Member = {
   birthDate: string
   joinDate: string
   status: MemberStatus
+  statusHistory?: StatusChange[]
   createdAt: string
 }
 
@@ -36,7 +44,12 @@ type MembersState = {
     data: Partial<Pick<Member, 'address' | 'domicileAddress' | 'nik' | 'fullName' | 'birthDate'>>,
     actorRole: Role
   ) => void
-  setMemberStatus: (id: string, status: MemberStatus, actorRole: Role) => void
+  setMemberStatus: (
+    id: string,
+    status: MemberStatus,
+    reason: string,
+    actorRole: Role
+  ) => void
 }
 
 const AGE_BRACKETS = [
@@ -74,9 +87,10 @@ function seedMembers(): Member[] {
         .birthdate({ min: 20, max: 65, mode: 'age' })
         .toISOString(),
       joinDate: joinDate.toISOString(),
-      status: faker.helpers.weightedArrayElement([
+      status: faker.helpers.weightedArrayElement<MemberStatus>([
         { value: 'aktif', weight: 7 },
-        { value: 'nonaktif', weight: 3 },
+        { value: 'pasif', weight: 2 },
+        { value: 'keluar', weight: 1 },
       ]),
       createdAt: joinDate.toISOString(),
     }
@@ -121,10 +135,22 @@ export const useMembersStore = create<MembersState>()(
           targetId: id,
         })
       },
-      setMemberStatus: (id, status, actorRole) => {
+      setMemberStatus: (id, status, reason, actorRole) => {
+        const change: StatusChange = {
+          status,
+          reason,
+          changedAt: new Date().toISOString(),
+          changedBy: 'Sekretaris',
+        }
         set((state) => ({
           members: state.members.map((m) =>
-            m.id === id ? { ...m, status } : m
+            m.id === id
+              ? {
+                  ...m,
+                  status,
+                  statusHistory: [change, ...(m.statusHistory ?? [])],
+                }
+              : m
           ),
         }))
         useAuditStore.getState().logAction({
@@ -133,6 +159,7 @@ export const useMembersStore = create<MembersState>()(
           action: `Mengubah status anggota menjadi ${status}`,
           module: 'anggota',
           targetId: id,
+          detail: reason,
         })
       },
     }),

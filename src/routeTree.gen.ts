@@ -27,15 +27,18 @@ import { Route as AuthenticatedSupplierIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedStokIndexRouteImport } from './routes/_authenticated/stok/index'
 import { Route as AuthenticatedSimpanPinjamIndexRouteImport } from './routes/_authenticated/simpan-pinjam/index'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
+import { Route as AuthenticatedRapatIndexRouteImport } from './routes/_authenticated/rapat/index'
 import { Route as AuthenticatedPosIndexRouteImport } from './routes/_authenticated/pos/index'
 import { Route as AuthenticatedPenukaranPoinIndexRouteImport } from './routes/_authenticated/penukaran-poin/index'
 import { Route as AuthenticatedPengumumanIndexRouteImport } from './routes/_authenticated/pengumuman/index'
+import { Route as AuthenticatedPengawasanIndexRouteImport } from './routes/_authenticated/pengawasan/index'
 import { Route as AuthenticatedLedgerIndexRouteImport } from './routes/_authenticated/ledger/index'
 import { Route as AuthenticatedLaporanIndexRouteImport } from './routes/_authenticated/laporan/index'
 import { Route as AuthenticatedKontrakIndexRouteImport } from './routes/_authenticated/kontrak/index'
 import { Route as AuthenticatedKonfigurasiShuIndexRouteImport } from './routes/_authenticated/konfigurasi-shu/index'
 import { Route as AuthenticatedKasMasukIndexRouteImport } from './routes/_authenticated/kas-masuk/index'
 import { Route as AuthenticatedKasKeluarIndexRouteImport } from './routes/_authenticated/kas-keluar/index'
+import { Route as AuthenticatedDokumenIndexRouteImport } from './routes/_authenticated/dokumen/index'
 import { Route as AuthenticatedAuditIndexRouteImport } from './routes/_authenticated/audit/index'
 import { Route as AuthenticatedApprovalIndexRouteImport } from './routes/_authenticated/approval/index'
 import { Route as AuthenticatedAnggotaIndexRouteImport } from './routes/_authenticated/anggota/index'
@@ -143,6 +146,11 @@ const AuthenticatedSettingsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedSettingsRouteRoute,
   } as any)
+const AuthenticatedRapatIndexRoute = AuthenticatedRapatIndexRouteImport.update({
+  id: '/rapat/',
+  path: '/rapat/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPosIndexRoute = AuthenticatedPosIndexRouteImport.update({
   id: '/pos/',
   path: '/pos/',
@@ -158,6 +166,12 @@ const AuthenticatedPengumumanIndexRoute =
   AuthenticatedPengumumanIndexRouteImport.update({
     id: '/pengumuman/',
     path: '/pengumuman/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPengawasanIndexRoute =
+  AuthenticatedPengawasanIndexRouteImport.update({
+    id: '/pengawasan/',
+    path: '/pengawasan/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedLedgerIndexRoute =
@@ -194,6 +208,12 @@ const AuthenticatedKasKeluarIndexRoute =
   AuthenticatedKasKeluarIndexRouteImport.update({
     id: '/kas-keluar/',
     path: '/kas-keluar/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDokumenIndexRoute =
+  AuthenticatedDokumenIndexRouteImport.update({
+    id: '/dokumen/',
+    path: '/dokumen/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAuditIndexRoute = AuthenticatedAuditIndexRouteImport.update({
@@ -289,15 +309,18 @@ export interface FileRoutesByFullPath {
   '/anggota/': typeof AuthenticatedAnggotaIndexRoute
   '/approval/': typeof AuthenticatedApprovalIndexRoute
   '/audit/': typeof AuthenticatedAuditIndexRoute
+  '/dokumen/': typeof AuthenticatedDokumenIndexRoute
   '/kas-keluar/': typeof AuthenticatedKasKeluarIndexRoute
   '/kas-masuk/': typeof AuthenticatedKasMasukIndexRoute
   '/konfigurasi-shu/': typeof AuthenticatedKonfigurasiShuIndexRoute
   '/kontrak/': typeof AuthenticatedKontrakIndexRoute
   '/laporan/': typeof AuthenticatedLaporanIndexRoute
   '/ledger/': typeof AuthenticatedLedgerIndexRoute
+  '/pengawasan/': typeof AuthenticatedPengawasanIndexRoute
   '/pengumuman/': typeof AuthenticatedPengumumanIndexRoute
   '/penukaran-poin/': typeof AuthenticatedPenukaranPoinIndexRoute
   '/pos/': typeof AuthenticatedPosIndexRoute
+  '/rapat/': typeof AuthenticatedRapatIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/simpan-pinjam/': typeof AuthenticatedSimpanPinjamIndexRoute
   '/stok/': typeof AuthenticatedStokIndexRoute
@@ -328,15 +351,18 @@ export interface FileRoutesByTo {
   '/anggota': typeof AuthenticatedAnggotaIndexRoute
   '/approval': typeof AuthenticatedApprovalIndexRoute
   '/audit': typeof AuthenticatedAuditIndexRoute
+  '/dokumen': typeof AuthenticatedDokumenIndexRoute
   '/kas-keluar': typeof AuthenticatedKasKeluarIndexRoute
   '/kas-masuk': typeof AuthenticatedKasMasukIndexRoute
   '/konfigurasi-shu': typeof AuthenticatedKonfigurasiShuIndexRoute
   '/kontrak': typeof AuthenticatedKontrakIndexRoute
   '/laporan': typeof AuthenticatedLaporanIndexRoute
   '/ledger': typeof AuthenticatedLedgerIndexRoute
+  '/pengawasan': typeof AuthenticatedPengawasanIndexRoute
   '/pengumuman': typeof AuthenticatedPengumumanIndexRoute
   '/penukaran-poin': typeof AuthenticatedPenukaranPoinIndexRoute
   '/pos': typeof AuthenticatedPosIndexRoute
+  '/rapat': typeof AuthenticatedRapatIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/simpan-pinjam': typeof AuthenticatedSimpanPinjamIndexRoute
   '/stok': typeof AuthenticatedStokIndexRoute
@@ -370,15 +396,18 @@ export interface FileRoutesById {
   '/_authenticated/anggota/': typeof AuthenticatedAnggotaIndexRoute
   '/_authenticated/approval/': typeof AuthenticatedApprovalIndexRoute
   '/_authenticated/audit/': typeof AuthenticatedAuditIndexRoute
+  '/_authenticated/dokumen/': typeof AuthenticatedDokumenIndexRoute
   '/_authenticated/kas-keluar/': typeof AuthenticatedKasKeluarIndexRoute
   '/_authenticated/kas-masuk/': typeof AuthenticatedKasMasukIndexRoute
   '/_authenticated/konfigurasi-shu/': typeof AuthenticatedKonfigurasiShuIndexRoute
   '/_authenticated/kontrak/': typeof AuthenticatedKontrakIndexRoute
   '/_authenticated/laporan/': typeof AuthenticatedLaporanIndexRoute
   '/_authenticated/ledger/': typeof AuthenticatedLedgerIndexRoute
+  '/_authenticated/pengawasan/': typeof AuthenticatedPengawasanIndexRoute
   '/_authenticated/pengumuman/': typeof AuthenticatedPengumumanIndexRoute
   '/_authenticated/penukaran-poin/': typeof AuthenticatedPenukaranPoinIndexRoute
   '/_authenticated/pos/': typeof AuthenticatedPosIndexRoute
+  '/_authenticated/rapat/': typeof AuthenticatedRapatIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/simpan-pinjam/': typeof AuthenticatedSimpanPinjamIndexRoute
   '/_authenticated/stok/': typeof AuthenticatedStokIndexRoute
@@ -412,15 +441,18 @@ export interface FileRouteTypes {
     | '/anggota/'
     | '/approval/'
     | '/audit/'
+    | '/dokumen/'
     | '/kas-keluar/'
     | '/kas-masuk/'
     | '/konfigurasi-shu/'
     | '/kontrak/'
     | '/laporan/'
     | '/ledger/'
+    | '/pengawasan/'
     | '/pengumuman/'
     | '/penukaran-poin/'
     | '/pos/'
+    | '/rapat/'
     | '/settings/'
     | '/simpan-pinjam/'
     | '/stok/'
@@ -451,15 +483,18 @@ export interface FileRouteTypes {
     | '/anggota'
     | '/approval'
     | '/audit'
+    | '/dokumen'
     | '/kas-keluar'
     | '/kas-masuk'
     | '/konfigurasi-shu'
     | '/kontrak'
     | '/laporan'
     | '/ledger'
+    | '/pengawasan'
     | '/pengumuman'
     | '/penukaran-poin'
     | '/pos'
+    | '/rapat'
     | '/settings'
     | '/simpan-pinjam'
     | '/stok'
@@ -492,15 +527,18 @@ export interface FileRouteTypes {
     | '/_authenticated/anggota/'
     | '/_authenticated/approval/'
     | '/_authenticated/audit/'
+    | '/_authenticated/dokumen/'
     | '/_authenticated/kas-keluar/'
     | '/_authenticated/kas-masuk/'
     | '/_authenticated/konfigurasi-shu/'
     | '/_authenticated/kontrak/'
     | '/_authenticated/laporan/'
     | '/_authenticated/ledger/'
+    | '/_authenticated/pengawasan/'
     | '/_authenticated/pengumuman/'
     | '/_authenticated/penukaran-poin/'
     | '/_authenticated/pos/'
+    | '/_authenticated/rapat/'
     | '/_authenticated/settings/'
     | '/_authenticated/simpan-pinjam/'
     | '/_authenticated/stok/'
@@ -654,6 +692,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsIndexRouteImport
       parentRoute: typeof AuthenticatedSettingsRouteRoute
     }
+    '/_authenticated/rapat/': {
+      id: '/_authenticated/rapat/'
+      path: '/rapat'
+      fullPath: '/rapat/'
+      preLoaderRoute: typeof AuthenticatedRapatIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/pos/': {
       id: '/_authenticated/pos/'
       path: '/pos'
@@ -673,6 +718,13 @@ declare module '@tanstack/react-router' {
       path: '/pengumuman'
       fullPath: '/pengumuman/'
       preLoaderRoute: typeof AuthenticatedPengumumanIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/pengawasan/': {
+      id: '/_authenticated/pengawasan/'
+      path: '/pengawasan'
+      fullPath: '/pengawasan/'
+      preLoaderRoute: typeof AuthenticatedPengawasanIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/ledger/': {
@@ -715,6 +767,13 @@ declare module '@tanstack/react-router' {
       path: '/kas-keluar'
       fullPath: '/kas-keluar/'
       preLoaderRoute: typeof AuthenticatedKasKeluarIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dokumen/': {
+      id: '/_authenticated/dokumen/'
+      path: '/dokumen'
+      fullPath: '/dokumen/'
+      preLoaderRoute: typeof AuthenticatedDokumenIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/audit/': {
@@ -834,15 +893,18 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAnggotaIndexRoute: typeof AuthenticatedAnggotaIndexRoute
   AuthenticatedApprovalIndexRoute: typeof AuthenticatedApprovalIndexRoute
   AuthenticatedAuditIndexRoute: typeof AuthenticatedAuditIndexRoute
+  AuthenticatedDokumenIndexRoute: typeof AuthenticatedDokumenIndexRoute
   AuthenticatedKasKeluarIndexRoute: typeof AuthenticatedKasKeluarIndexRoute
   AuthenticatedKasMasukIndexRoute: typeof AuthenticatedKasMasukIndexRoute
   AuthenticatedKonfigurasiShuIndexRoute: typeof AuthenticatedKonfigurasiShuIndexRoute
   AuthenticatedKontrakIndexRoute: typeof AuthenticatedKontrakIndexRoute
   AuthenticatedLaporanIndexRoute: typeof AuthenticatedLaporanIndexRoute
   AuthenticatedLedgerIndexRoute: typeof AuthenticatedLedgerIndexRoute
+  AuthenticatedPengawasanIndexRoute: typeof AuthenticatedPengawasanIndexRoute
   AuthenticatedPengumumanIndexRoute: typeof AuthenticatedPengumumanIndexRoute
   AuthenticatedPenukaranPoinIndexRoute: typeof AuthenticatedPenukaranPoinIndexRoute
   AuthenticatedPosIndexRoute: typeof AuthenticatedPosIndexRoute
+  AuthenticatedRapatIndexRoute: typeof AuthenticatedRapatIndexRoute
   AuthenticatedSimpanPinjamIndexRoute: typeof AuthenticatedSimpanPinjamIndexRoute
   AuthenticatedStokIndexRoute: typeof AuthenticatedStokIndexRoute
   AuthenticatedSupplierIndexRoute: typeof AuthenticatedSupplierIndexRoute
@@ -860,15 +922,18 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAnggotaIndexRoute: AuthenticatedAnggotaIndexRoute,
   AuthenticatedApprovalIndexRoute: AuthenticatedApprovalIndexRoute,
   AuthenticatedAuditIndexRoute: AuthenticatedAuditIndexRoute,
+  AuthenticatedDokumenIndexRoute: AuthenticatedDokumenIndexRoute,
   AuthenticatedKasKeluarIndexRoute: AuthenticatedKasKeluarIndexRoute,
   AuthenticatedKasMasukIndexRoute: AuthenticatedKasMasukIndexRoute,
   AuthenticatedKonfigurasiShuIndexRoute: AuthenticatedKonfigurasiShuIndexRoute,
   AuthenticatedKontrakIndexRoute: AuthenticatedKontrakIndexRoute,
   AuthenticatedLaporanIndexRoute: AuthenticatedLaporanIndexRoute,
   AuthenticatedLedgerIndexRoute: AuthenticatedLedgerIndexRoute,
+  AuthenticatedPengawasanIndexRoute: AuthenticatedPengawasanIndexRoute,
   AuthenticatedPengumumanIndexRoute: AuthenticatedPengumumanIndexRoute,
   AuthenticatedPenukaranPoinIndexRoute: AuthenticatedPenukaranPoinIndexRoute,
   AuthenticatedPosIndexRoute: AuthenticatedPosIndexRoute,
+  AuthenticatedRapatIndexRoute: AuthenticatedRapatIndexRoute,
   AuthenticatedSimpanPinjamIndexRoute: AuthenticatedSimpanPinjamIndexRoute,
   AuthenticatedStokIndexRoute: AuthenticatedStokIndexRoute,
   AuthenticatedSupplierIndexRoute: AuthenticatedSupplierIndexRoute,

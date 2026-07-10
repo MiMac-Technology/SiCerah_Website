@@ -7,10 +7,13 @@ import { RoleSwitch } from '@/components/role-switch'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { useRoleAccess } from '@/hooks/use-role-access'
+import { useShuConfigStore } from '@/stores/shu-config-store'
+import { ParameterLockCard } from './components/parameter-lock-card'
 import { ShuConfigForm } from './components/shu-config-form'
 
 export function KonfigurasiShu() {
   const { activeRole, hasAccess } = useRoleAccess(['bendahara', 'ketua'])
+  const locked = useShuConfigStore((s) => s.config.locked ?? false)
 
   return (
     <>
@@ -31,7 +34,10 @@ export function KonfigurasiShu() {
           </p>
         </div>
         {!hasAccess && <AccessRestrictedBanner activeRole={activeRole} />}
-        <ShuConfigForm disabled={!hasAccess} />
+        <div className='space-y-6'>
+          <ParameterLockCard isKetua={activeRole === 'ketua'} />
+          <ShuConfigForm disabled={!hasAccess || locked} />
+        </div>
       </Main>
     </>
   )

@@ -1,21 +1,15 @@
-import { useRole } from '@/context/role-provider'
-import { useMembersStore } from '@/stores/members-store'
-import { ConfirmDialog } from '@/components/confirm-dialog'
 import { AnggotaEditDrawer } from './anggota-edit-drawer'
 import { useAnggota } from './anggota-provider'
 import { AnggotaRegisterDrawer } from './anggota-register-drawer'
+import { AnggotaStatusDialog } from './anggota-status-dialog'
 
 export function AnggotaDialogs() {
   const { open, setOpen, currentRow, setCurrentRow } = useAnggota()
-  const { activeRole } = useRole()
-  const setMemberStatus = useMembersStore((s) => s.setMemberStatus)
 
   const handleClose = () => {
     setOpen(null)
     setTimeout(() => setCurrentRow(null), 500)
   }
-
-  const isActive = currentRow?.status === 'aktif'
 
   return (
     <>
@@ -37,38 +31,13 @@ export function AnggotaDialogs() {
             currentRow={currentRow}
           />
 
-          <ConfirmDialog
-            key={`anggota-deactivate-${currentRow.id}`}
+          <AnggotaStatusDialog
+            key={`anggota-status-${currentRow.id}`}
             open={open === 'deactivate'}
             onOpenChange={(v) => {
               if (!v) handleClose()
             }}
-            title={isActive ? 'Nonaktifkan anggota?' : 'Aktifkan kembali anggota?'}
-            desc={
-              isActive ? (
-                <>
-                  Anggota <strong>{currentRow.fullName}</strong> (
-                  {currentRow.memberNo}) akan dinonaktifkan. Anggota tidak akan
-                  dapat melakukan transaksi selama berstatus nonaktif.
-                </>
-              ) : (
-                <>
-                  Anggota <strong>{currentRow.fullName}</strong> (
-                  {currentRow.memberNo}) akan diaktifkan kembali.
-                </>
-              )
-            }
-            destructive={isActive}
-            confirmText={isActive ? 'Nonaktifkan' : 'Aktifkan'}
-            cancelBtnText='Batal'
-            handleConfirm={() => {
-              setMemberStatus(
-                currentRow.id,
-                isActive ? 'nonaktif' : 'aktif',
-                activeRole
-              )
-              handleClose()
-            }}
+            currentRow={currentRow}
           />
         </>
       )}

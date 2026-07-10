@@ -1,3 +1,5 @@
+import { FileDown } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
@@ -44,12 +46,17 @@ export function Audit() {
         <ProfileDropdown />
       </Header>
       <Main>
-        <div className='mb-4'>
-          <h2 className='text-2xl font-bold tracking-tight'>Audit Trail</h2>
-          <p className='text-muted-foreground'>
-            Jejak aktivitas append-only — tidak dapat diubah atau dihapus oleh
-            siapa pun, termasuk pengurus.
-          </p>
+        <div className='mb-4 flex flex-wrap items-center justify-between gap-2'>
+          <div>
+            <h2 className='text-2xl font-bold tracking-tight'>Audit Trail</h2>
+            <p className='text-muted-foreground'>
+              Jejak aktivitas append-only — tidak dapat diubah atau dihapus
+              oleh siapa pun, termasuk pengurus.
+            </p>
+          </div>
+          <Button variant='outline' onClick={() => window.print()}>
+            <FileDown className='size-4' /> Export PDF
+          </Button>
         </div>
         <div className='mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
           {stats.map((stat) => (
@@ -65,7 +72,9 @@ export function Audit() {
             </Card>
           ))}
         </div>
-        <AuditTable data={entries} />
+        <div className='print-area'>
+          <AuditTable data={entries} />
+        </div>
       </Main>
     </>
   )

@@ -32,6 +32,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { Textarea } from '@/components/ui/textarea'
+import { isDelegateFor, useDelegationStore } from '@/stores/delegation-store'
 import { voteFormSchema, type VoteFormValues } from '../data/schema'
 import { useApprovalUi } from './approval-provider'
 
@@ -45,6 +46,11 @@ export function ApprovalDetailSheet() {
   const approvals = useApprovalsStore((s) => s.approvals)
   const castVote = useApprovalsStore((s) => s.castVote)
   const finalizeApproval = useApprovalsStore((s) => s.finalizeApproval)
+
+  const delegation = useDelegationStore((s) => s.delegation)
+  const actsAsKetua =
+    activeRole === 'ketua' ||
+    isDelegateFor(delegation, activeRole, 'pengeluaran')
 
   const approval = approvals.find((a) => a.id === selectedId)
 
@@ -74,7 +80,13 @@ export function ApprovalDetailSheet() {
   }
 
   const handleFinalize = (decision: 'Disetujui' | 'Ditolak') => {
-    finalizeApproval(approval.id, decision, ROLE_LABELS.ketua)
+    finalizeApproval(
+      approval.id,
+      decision,
+      activeRole === 'ketua'
+        ? ROLE_LABELS.ketua
+        : `${ROLE_LABELS[activeRole]} (delegasi Ketua)`
+    )
     toast.success(`Approval telah ${decision.toLowerCase()}`)
     setSelectedId(null)
   }
@@ -204,7 +216,7 @@ export function ApprovalDetailSheet() {
               Kirim Suara
             </Button>
           )}
-          {isRunning && activeRole === 'ketua' && (
+          {isRunning && actsAsKetua && (
             <div className='flex gap-2'>
               <Button
                 variant='destructive'

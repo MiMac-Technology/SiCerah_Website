@@ -63,4 +63,13 @@ export const auditColumns: ColumnDef<AuditEntry>[] = [
       </span>
     ),
   },
+  {
+    accessorKey: 'device',
+    header: 'Perangkat',
+    cell: ({ row }) => (
+      <span className='text-xs text-muted-foreground'>
+        {(row.getValue('device') as string | undefined) ?? '—'}
+      </span>
+    ),
+  },
 ]

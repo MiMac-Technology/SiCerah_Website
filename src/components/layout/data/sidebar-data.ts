@@ -26,6 +26,8 @@ import {
   Boxes,
   Truck,
   Handshake,
+  FolderArchive,
+  Eye,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 
@@ -143,6 +145,18 @@ export const sidebarData: SidebarData = {
           icon: Users,
           roles: ['sekretaris', 'ketua'],
         },
+        {
+          title: 'Rapat',
+          url: '/rapat',
+          icon: CalendarClock,
+          roles: ['sekretaris', 'ketua'],
+        },
+        {
+          title: 'Dokumen Koperasi',
+          url: '/dokumen',
+          icon: FolderArchive,
+          roles: ['sekretaris', 'ketua', 'pengawas'],
+        },
       ],
     },
     {
@@ -195,6 +209,12 @@ export const sidebarData: SidebarData = {
     {
       title: 'Pengawasan',
       items: [
+        {
+          title: 'Pengawasan',
+          url: '/pengawasan',
+          icon: Eye,
+          roles: ['pengawas', 'ketua'],
+        },
         {
           title: 'Audit Trail',
           url: '/audit',

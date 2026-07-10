@@ -85,3 +85,23 @@
     height: 0;
   }
 }
+
+/* Export PDF: saat mencetak, hanya elemen .print-area yang terlihat. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    inset-inline-start: 0;
+    top: 0;
+    width: 100%;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

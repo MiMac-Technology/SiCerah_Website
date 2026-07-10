@@ -23,6 +23,8 @@ export type AuditEntry = {
   module: AuditModule
   targetId?: string
   detail?: string
+  /** Perangkat/asal aksi (untuk audit level aplikasi). */
+  device?: string
 }
 
 type AuditState = {
@@ -50,6 +52,26 @@ const SAMPLE_ACTIONS: Record<AuditModule, string[]> = {
   logistik: ['Mencatat barang masuk', 'Melakukan stok opname'],
 }
 
+function detectDevice(): string {
+  if (typeof navigator === 'undefined') return 'Web'
+  const ua = navigator.userAgent
+  const browser = ua.includes('Edg')
+    ? 'Edge'
+    : ua.includes('Chrome')
+      ? 'Chrome'
+      : ua.includes('Safari')
+        ? 'Safari'
+        : 'Browser'
+  const os = ua.includes('Windows')
+    ? 'Windows'
+    : ua.includes('Android')
+      ? 'Android'
+      : ua.includes('Mac')
+        ? 'macOS'
+        : 'OS lain'
+  return `Web — ${browser} (${os})`
+}
+
 function seedEntries(): AuditEntry[] {
   faker.seed(1001)
   return Array.from({ length: 40 }, () => {
@@ -63,6 +85,12 @@ function seedEntries(): AuditEntry[] {
       action: faker.helpers.arrayElement(SAMPLE_ACTIONS[mod]),
       module: mod,
       detail: faker.lorem.sentence({ min: 4, max: 8 }),
+      device: faker.helpers.arrayElement([
+        'Web — Chrome (Windows)',
+        'Web — Chrome (Android)',
+        'Web — Safari (iPhone)',
+        'Web — Edge (Windows)',
+      ]),
     }
   }).sort((a, b) => b.timestamp.localeCompare(a.timestamp))
 }
@@ -74,7 +102,12 @@ export const useAuditStore = create<AuditState>()(
       logAction: (entry) =>
         set((state) => ({
           entries: [
-            { ...entry, id: genId('audit'), timestamp: new Date().toISOString() },
+            {
+              ...entry,
+              id: genId('audit'),
+              timestamp: new Date().toISOString(),
+              device: entry.device ?? detectDevice(),
+            },
             ...state.entries,
           ],
         })),

@@ -52,21 +52,46 @@ export function PengumumanMutateDrawer({
 
   const form = useForm<AnnouncementFormValues>({
     resolver: zodResolver(announcementFormSchema),
-    defaultValues: currentRow ?? {
-      title: '',
-      content: '',
-      category: 'Umum',
-      photoDataUrl: undefined,
-    },
+    defaultValues: currentRow
+      ? {
+          title: currentRow.title,
+          content: currentRow.content,
+          category: currentRow.category,
+          photoDataUrl: currentRow.photoDataUrl,
+          channel: currentRow.channel ?? 'in-app',
+          scheduledAt: currentRow.scheduledAt
+            ? currentRow.scheduledAt.slice(0, 16)
+            : undefined,
+        }
+      : {
+          title: '',
+          content: '',
+          category: 'Umum',
+          photoDataUrl: undefined,
+          channel: 'keduanya',
+          scheduledAt: undefined,
+        },
   })
 
   const onSubmit = (data: AnnouncementFormValues) => {
+    const payload = {
+      ...data,
+      scheduledAt: data.scheduledAt
+        ? new Date(data.scheduledAt).toISOString()
+        : undefined,
+    }
+    const isScheduled =
+      !!payload.scheduledAt && new Date(payload.scheduledAt) > new Date()
     if (currentRow) {
-      updateAnnouncement(currentRow.id, data, activeRole)
+      updateAnnouncement(currentRow.id, payload, activeRole)
       toast.success('Pengumuman berhasil diperbarui.')
     } else {
-      createAnnouncement(data, activeRole)
-      toast.success('Pengumuman berhasil dibuat.')
+      createAnnouncement(payload, activeRole)
+      toast.success(
+        isScheduled
+          ? 'Pengumuman dijadwalkan — akan terkirim otomatis sesuai jadwal.'
+          : 'Pengumuman berhasil dibuat.'
+      )
     }
     onOpenChange(false)
     form.reset()
@@ -140,6 +165,46 @@ export function PengumumanMutateDrawer({
                       {...field}
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='channel'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Channel Pengiriman</FormLabel>
+                  <SelectDropdown
+                    defaultValue={field.value}
+                    onValueChange={field.onChange}
+                    placeholder='Pilih channel'
+                    items={[
+                      { label: 'Notif In-App', value: 'in-app' },
+                      { label: 'WA Blast', value: 'wa' },
+                      { label: 'Keduanya (In-App + WA)', value: 'keduanya' },
+                    ]}
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='scheduledAt'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Jadwalkan Pengiriman (opsional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type='datetime-local'
+                      {...field}
+                      value={field.value ?? ''}
+                    />
+                  </FormControl>
+                  <p className='text-xs text-muted-foreground'>
+                    Kosongkan untuk kirim langsung saat disimpan.
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}

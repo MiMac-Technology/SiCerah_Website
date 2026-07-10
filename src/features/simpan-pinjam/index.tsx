@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/table'
 import { useRole } from '@/context/role-provider'
 import { useRoleAccess } from '@/hooks/use-role-access'
+import { isDelegateFor, useDelegationStore } from '@/stores/delegation-store'
 import {
   LOAN_ESCALATION_THRESHOLD,
   useLoansStore,
@@ -121,16 +122,23 @@ function ApproveDialog({
 }
 
 export function SimpanPinjam() {
-  const { activeRole, hasAccess } = useRoleAccess(['bendahara', 'ketua'])
+  const { activeRole, hasAccess: baseAccess } = useRoleAccess([
+    'bendahara',
+    'ketua',
+  ])
   const { activeRole: role } = useRole()
   const loans = useLoansStore((s) => s.loans)
   const rejectLoan = useLoansStore((s) => s.rejectLoan)
   const escalateLoan = useLoansStore((s) => s.escalateLoan)
   const logReminderSent = useLoansStore((s) => s.logReminderSent)
+  const delegation = useDelegationStore((s) => s.delegation)
   const [approving, setApproving] = useState<Loan | null>(null)
 
   const isBendahara = role === 'bendahara'
-  const isKetua = role === 'ketua'
+  const holdsDelegation = isDelegateFor(delegation, role, 'pinjaman')
+  // Delegasi dari Ketua memberi hak memutus pinjaman eskalasi + akses halaman ini.
+  const isKetua = role === 'ketua' || holdsDelegation
+  const hasAccess = baseAccess || holdsDelegation
 
   const buildReminderLink = (loan: Loan) =>
     buildWaLink(
@@ -159,6 +167,12 @@ export function SimpanPinjam() {
           </p>
         </div>
         {!hasAccess && <AccessRestrictedBanner activeRole={activeRole} />}
+        {holdsDelegation && (
+          <p className='mb-4 rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-sm'>
+            Anda memegang <strong>delegasi approval pinjaman</strong> dari
+            Ketua hingga {formatDate(delegation!.until)}.
+          </p>
+        )}
         <Card>
           <CardHeader>
             <CardTitle>Pengajuan Pinjaman</CardTitle>
