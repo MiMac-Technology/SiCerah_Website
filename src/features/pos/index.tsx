@@ -1,3 +1,5 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { AccessRestrictedBanner } from '@/components/access-restricted-banner'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
@@ -6,8 +8,14 @@ import { ProfileDropdown } from '@/components/profile-dropdown'
 import { RoleSwitch } from '@/components/role-switch'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
+import { handleServerError } from '@/lib/handle-server-error'
 import { useRoleAccess } from '@/hooks/use-role-access'
-import { useTransactionsStore } from '@/stores/transactions-store'
+import {
+  approveVoidSale,
+  listPendingVoidSales,
+  listSales,
+  rejectVoidSale,
+} from './api'
 import { PosCartForm } from './components/pos-cart-form'
 import { PosProvider } from './components/pos-provider'
 import { PosReceiptSheet } from './components/pos-receipt-sheet'
@@ -20,8 +28,33 @@ export function Pos() {
     'ketua',
     'bendahara',
   ])
-  const transactions = useTransactionsStore((s) => s.transactions)
   const canTransact = activeRole === 'kasir'
+  const queryClient = useQueryClient()
+
+  const { data: transactions = [], isLoading } = useQuery({
+    queryKey: ['pos', 'penjualan', activeRole],
+    queryFn: () =>
+      activeRole === 'kasir' ? listSales() : listPendingVoidSales(),
+    enabled: hasAccess && (activeRole === 'kasir' || activeRole === 'bendahara'),
+  })
+
+  const approveMutation = useMutation({
+    mutationFn: approveVoidSale,
+    onSuccess: (sale) => {
+      queryClient.invalidateQueries({ queryKey: ['pos', 'penjualan'] })
+      toast.success(`Void ${sale.trxNo} disetujui`)
+    },
+    onError: handleServerError,
+  })
+
+  const rejectMutation = useMutation({
+    mutationFn: rejectVoidSale,
+    onSuccess: (sale) => {
+      queryClient.invalidateQueries({ queryKey: ['pos', 'penjualan'] })
+      toast.info(`Void ${sale.trxNo} ditolak`)
+    },
+    onError: handleServerError,
+  })
 
   return (
     <PosProvider>
@@ -45,7 +78,7 @@ export function Pos() {
           <p className='mb-4 text-sm text-muted-foreground'>
             {activeRole === 'bendahara'
               ? 'Anda melihat sebagai Bendahara — gunakan menu aksi pada baris transaksi untuk menyetujui/menolak pengajuan void dari kasir.'
-              : 'Anda melihat sebagai Ketua — hanya kasir yang dapat mencatat transaksi baru. Riwayat transaksi di bawah bersifat read-only.'}
+              : 'Anda melihat sebagai Ketua — riwayat transaksi lintas kasir belum tersedia untuk role ini.'}
           </p>
         )}
         <div className='grid gap-6 lg:grid-cols-2'>
@@ -55,8 +88,22 @@ export function Pos() {
             </div>
           )}
           <div className='lg:col-span-2'>
-            <h3 className='mb-3 text-lg font-semibold'>Riwayat Transaksi</h3>
-            <PosTransactionsTable data={transactions} />
+            <h3 className='mb-3 text-lg font-semibold'>
+              {activeRole === 'bendahara'
+                ? 'Antrean Persetujuan Void'
+                : 'Riwayat Transaksi'}
+            </h3>
+            {isLoading ? (
+              <p className='py-8 text-center text-muted-foreground'>
+                Memuat data...
+              </p>
+            ) : (
+              <PosTransactionsTable
+                data={transactions}
+                onApproveVoid={(sale) => approveMutation.mutate(sale.id)}
+                onRejectVoid={(sale) => rejectMutation.mutate(sale.id)}
+              />
+            )}
           </div>
         </div>
       </Main>

@@ -12,7 +12,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { STAFF_ROLES, STAFF_ROLE_LABELS } from '@/config/roles'
-import { type StaffAccount } from '@/stores/accounts-store'
+import { type StaffAccount } from '../api'
 import {
   Table,
   TableBody,

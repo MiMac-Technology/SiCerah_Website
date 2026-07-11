@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Check, ChevronsUpDown, UserRound } from 'lucide-react'
+import { Check, ChevronsUpDown, Package } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
+import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -16,21 +17,21 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { searchMembers, type MemberLookup } from '../api'
+import { listProducts, type Product } from '../api'
 
-type MemberComboboxProps = {
+type ProductComboboxProps = {
   value: number | undefined
   label: string | undefined
-  onSelect: (member: MemberLookup) => void
+  onSelect: (product: Product) => void
   disabled?: boolean
 }
 
-export function MemberCombobox({
+export function ProductCombobox({
   value,
   label,
   onSelect,
   disabled,
-}: MemberComboboxProps) {
+}: ProductComboboxProps) {
   const [popoverOpen, setPopoverOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -40,9 +41,9 @@ export function MemberCombobox({
     return () => clearTimeout(timeout)
   }, [search])
 
-  const { data: members = [], isFetching } = useQuery({
-    queryKey: ['pos', 'anggota', debouncedSearch],
-    queryFn: () => searchMembers(debouncedSearch),
+  const { data: products = [], isFetching } = useQuery({
+    queryKey: ['pos', 'produk', debouncedSearch],
+    queryFn: () => listProducts(debouncedSearch),
     enabled: popoverOpen,
   })
 
@@ -60,45 +61,48 @@ export function MemberCombobox({
           )}
         >
           <span className='flex items-center gap-2 truncate'>
-            <UserRound className='size-4 shrink-0' />
-            {value && label ? label : 'Cari anggota (nama / no. anggota / WA)'}
+            <Package className='size-4 shrink-0' />
+            {value && label ? label : 'Pilih produk'}
           </span>
           <ChevronsUpDown className='size-4 shrink-0 opacity-50' />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className='w-100 p-0' align='start'>
+      <PopoverContent className='w-80 p-0' align='start'>
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder='Cari anggota...'
+            placeholder='Cari produk (nama / SKU)...'
             value={search}
             onValueChange={setSearch}
           />
           <CommandList>
             <CommandEmpty>
-              {isFetching ? 'Mencari...' : 'Anggota tidak ditemukan.'}
+              {isFetching ? 'Mencari...' : 'Produk tidak ditemukan.'}
             </CommandEmpty>
             <CommandGroup>
-              {members.map((member) => (
+              {products.map((product) => (
                 <CommandItem
-                  key={member.id}
-                  value={String(member.id)}
+                  key={product.id}
+                  value={String(product.id)}
                   onSelect={() => {
-                    onSelect(member)
+                    onSelect(product)
                     setPopoverOpen(false)
                   }}
                 >
                   <Check
                     className={cn(
                       'size-4',
-                      member.id === value ? 'opacity-100' : 'opacity-0'
+                      product.id === value ? 'opacity-100' : 'opacity-0'
                     )}
                   />
-                  <div className='flex flex-col'>
-                    <span>{member.name}</span>
+                  <div className='flex flex-1 flex-col'>
+                    <span>{product.name}</span>
                     <span className='text-xs text-muted-foreground'>
-                      {member.memberNo} — {member.phone}
+                      Stok {product.stock} {product.unit}
                     </span>
                   </div>
+                  <span className='text-xs text-muted-foreground'>
+                    {formatCurrency(product.memberPrice ?? product.price)}
+                  </span>
                 </CommandItem>
               ))}
             </CommandGroup>

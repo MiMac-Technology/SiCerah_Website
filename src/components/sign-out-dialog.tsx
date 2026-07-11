@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from '@tanstack/react-router'
 import { useAuthStore } from '@/stores/auth-store'
+import { apiClient } from '@/lib/api-client'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 
 interface SignOutDialogProps {
@@ -13,13 +14,16 @@ export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
   const { auth } = useAuthStore()
 
   const handleSignOut = () => {
-    auth.reset()
-    // Preserve current location for redirect after sign-in
-    const currentPath = location.href
-    navigate({
-      to: '/sign-in',
-      search: { redirect: currentPath },
-      replace: true,
+    // Blacklist token & hapus cookie access_token di server. Tetap reset
+    // state lokal walau request gagal (mis. sudah offline/token expired).
+    apiClient.post('/logout').catch(() => undefined).finally(() => {
+      auth.reset()
+      const currentPath = location.href
+      navigate({
+        to: '/sign-in',
+        search: { redirect: currentPath },
+        replace: true,
+      })
     })
   }
 

@@ -11,8 +11,6 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { useMembersStore } from '@/stores/members-store'
-import { type Transaction } from '@/stores/transactions-store'
 import {
   Table,
   TableBody,
@@ -22,21 +20,23 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table'
+import { type Sale } from '../api'
 import { getPosTransactionColumns } from './pos-transactions-columns'
 
 type PosTransactionsTableProps = {
-  data: Transaction[]
+  data: Sale[]
+  onApproveVoid: (sale: Sale) => void
+  onRejectVoid: (sale: Sale) => void
 }
 
-export function PosTransactionsTable({ data }: PosTransactionsTableProps) {
-  const members = useMembersStore((s) => s.members)
-  const memberNameById = useMemo(
-    () => Object.fromEntries(members.map((m) => [m.id, m.fullName])),
-    [members]
-  )
+export function PosTransactionsTable({
+  data,
+  onApproveVoid,
+  onRejectVoid,
+}: PosTransactionsTableProps) {
   const columns = useMemo(
-    () => getPosTransactionColumns(memberNameById),
-    [memberNameById]
+    () => getPosTransactionColumns({ onApproveVoid, onRejectVoid }),
+    [onApproveVoid, onRejectVoid]
   )
 
   const [sorting, setSorting] = useState<SortingState>([])

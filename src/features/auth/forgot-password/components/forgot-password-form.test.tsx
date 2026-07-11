@@ -25,7 +25,7 @@ describe('ForgotPasswordForm', () => {
 
     screen = await render(<ForgotPasswordForm />)
     emailInput = screen.getByRole('textbox', { name: /^Email$/i })
-    continueButton = screen.getByRole('button', { name: /^Continue$/i })
+    continueButton = screen.getByRole('button', { name: /^Lanjut$/i })
   })
 
   it('renders email field and continue button', async () => {
@@ -36,7 +36,7 @@ describe('ForgotPasswordForm', () => {
   it('shows validation when submitting empty form', async () => {
     await userEvent.click(continueButton)
     await expect
-      .element(screen.getByText(/^Please enter your email\.$/i))
+      .element(screen.getByText(/^Email wajib diisi\.$/i))
       .toBeInTheDocument()
   })
 

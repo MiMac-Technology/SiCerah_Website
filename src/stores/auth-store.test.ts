@@ -1,16 +1,24 @@
 import { clearCookies } from '@/test-utils/cookies'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { AuthUser } from '@/types/auth'
 
 async function importAuthStore() {
   const { useAuthStore } = await import('./auth-store')
   return useAuthStore
 }
 
-const sampleUser = {
-  accountNo: 'ACC-1',
+const sampleUser: AuthUser = {
+  id: 1,
+  name: 'Test User',
   email: 'user@example.com',
-  role: ['user'],
-  exp: 1_700_000_000,
+  nik: '3201000000000001',
+  alamat: 'Jl. Contoh No. 1',
+  no_wa: '081200000000',
+  role: 'admin',
+  no_anggota: null,
+  status_keanggotaan: 'aktif',
+  is_active: true,
+  tanggal_lahir: null,
 }
 
 describe('useAuthStore', () => {

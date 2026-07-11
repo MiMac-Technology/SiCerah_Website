@@ -1,4 +1,6 @@
 import { Plus } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { AccessRestrictedBanner } from '@/components/access-restricted-banner'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
@@ -10,14 +12,25 @@ import { ThemeSwitch } from '@/components/theme-switch'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { useRoleAccess } from '@/hooks/use-role-access'
-import { useAccountsStore } from '@/stores/accounts-store'
+import { handleServerError } from '@/lib/handle-server-error'
+import { listAccounts, setAccountStatus } from './api'
 import { AkunMutateDrawer } from './components/akun-mutate-drawer'
 import { AkunProvider, useAkun } from './components/akun-provider'
 import { AkunTable } from './components/akun-table'
 
 function AkunDialogs() {
   const { open, setOpen, currentRow, setCurrentRow } = useAkun()
-  const setAccountStatus = useAccountsStore((s) => s.setAccountStatus)
+  const queryClient = useQueryClient()
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: number; status: 'aktif' | 'nonaktif' }) =>
+      setAccountStatus(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-akun'] })
+      toast.success('Status akun diperbarui')
+    },
+    onError: handleServerError,
+  })
 
   const close = () => {
     setOpen(null)
@@ -54,10 +67,10 @@ function AkunDialogs() {
             }
             cancelBtnText='Batal'
             handleConfirm={() => {
-              setAccountStatus(
-                currentRow.id,
-                currentRow.status === 'aktif' ? 'nonaktif' : 'aktif'
-              )
+              statusMutation.mutate({
+                id: currentRow.id,
+                status: currentRow.status === 'aktif' ? 'nonaktif' : 'aktif',
+              })
               close()
             }}
           />
@@ -69,7 +82,10 @@ function AkunDialogs() {
 
 function AdminAkunContent() {
   const { activeRole, hasAccess } = useRoleAccess(['admin'])
-  const accounts = useAccountsStore((s) => s.accounts)
+  const { data: accounts = [], isLoading } = useQuery({
+    queryKey: ['admin-akun'],
+    queryFn: listAccounts,
+  })
   const { setOpen } = useAkun()
 
   return (
@@ -97,7 +113,13 @@ function AdminAkunContent() {
         </div>
         {!hasAccess && <AccessRestrictedBanner activeRole={activeRole} />}
         <div className='-mx-4 flex-1 overflow-auto px-4 py-1'>
-          <AkunTable data={accounts} />
+          {isLoading ? (
+            <p className='text-muted-foreground px-4 py-8 text-center'>
+              Memuat data...
+            </p>
+          ) : (
+            <AkunTable data={accounts} />
+          )}
         </div>
       </Main>
       <AkunDialogs />

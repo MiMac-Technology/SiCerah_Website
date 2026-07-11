@@ -1,8 +1,8 @@
 import { useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { formatCurrency } from '@/lib/format'
-import { useRole } from '@/context/role-provider'
-import { useTransactionsStore } from '@/stores/transactions-store'
+import { handleServerError } from '@/lib/handle-server-error'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -14,13 +14,24 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { requestVoidSale } from '../api'
 import { usePos } from './pos-provider'
 
 export function PosVoidDialog() {
   const { open, setOpen, currentTransaction, setCurrentTransaction } = usePos()
-  const { activeRole } = useRole()
-  const requestVoid = useTransactionsStore((s) => s.requestVoid)
+  const queryClient = useQueryClient()
   const [reason, setReason] = useState('')
+
+  const requestVoidMutation = useMutation({
+    mutationFn: ({ id, reason }: { id: number; reason: string }) =>
+      requestVoidSale(id, reason),
+    onSuccess: (sale) => {
+      queryClient.invalidateQueries({ queryKey: ['pos', 'penjualan'] })
+      toast.success(`Pengajuan void ${sale.trxNo} dikirim ke Bendahara`)
+      close()
+    },
+    onError: handleServerError,
+  })
 
   if (!currentTransaction) return null
   const trx = currentTransaction
@@ -56,12 +67,10 @@ export function PosVoidDialog() {
             Batal
           </Button>
           <Button
-            disabled={!reason.trim()}
-            onClick={() => {
-              requestVoid(trx.id, reason.trim(), activeRole)
-              toast.success('Pengajuan void dikirim ke Bendahara')
-              close()
-            }}
+            disabled={!reason.trim() || requestVoidMutation.isPending}
+            onClick={() =>
+              requestVoidMutation.mutate({ id: trx.id, reason: reason.trim() })
+            }
           >
             Ajukan Void
           </Button>

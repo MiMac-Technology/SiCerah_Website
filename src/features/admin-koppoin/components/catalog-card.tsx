@@ -1,15 +1,18 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { formatDate } from '@/lib/format'
+import { handleServerError } from '@/lib/handle-server-error'
 import {
-  useKopPoinConfigStore,
-  type RewardType,
-} from '@/stores/koppoin-config-store'
-import { Badge } from '@/components/ui/badge'
+  createCatalogItem,
+  deleteCatalogItem,
+  listCatalog,
+  type PointCatalogItem,
+} from '../api'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -43,28 +46,23 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { SelectDropdown } from '@/components/select-dropdown'
 import { ConfirmDialog } from '@/components/confirm-dialog'
-
-const REWARD_TYPES: RewardType[] = [
-  'Diskon Belanja',
-  'Potongan Simpanan',
-  'Potongan Jasa Pinjaman',
-]
 
 const rewardFormSchema = z.object({
   name: z.string().min(1, 'Nama reward wajib diisi'),
-  type: z.enum(['Diskon Belanja', 'Potongan Simpanan', 'Potongan Jasa Pinjaman']),
-  pointCost: z.coerce.number().positive('Poin harus lebih dari 0'),
-  validUntil: z.string().min(1, 'Masa berlaku wajib diisi'),
+  description: z.string().optional(),
+  costPoints: z.coerce.number().positive('Poin harus lebih dari 0'),
+  validUntil: z.string().optional(),
 })
 
 export function CatalogCard({ disabled }: { disabled: boolean }) {
-  const catalog = useKopPoinConfigStore((s) => s.catalog)
-  const addRewardItem = useKopPoinConfigStore((s) => s.addRewardItem)
-  const deleteRewardItem = useKopPoinConfigStore((s) => s.deleteRewardItem)
+  const queryClient = useQueryClient()
+  const { data: catalog = [], isLoading } = useQuery({
+    queryKey: ['admin-poin-katalog'],
+    queryFn: listCatalog,
+  })
   const [addOpen, setAddOpen] = useState(false)
-  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [deleteId, setDeleteId] = useState<number | null>(null)
 
   const form = useForm<
     z.input<typeof rewardFormSchema>,
@@ -72,25 +70,39 @@ export function CatalogCard({ disabled }: { disabled: boolean }) {
     z.output<typeof rewardFormSchema>
   >({
     resolver: zodResolver(rewardFormSchema),
-    defaultValues: {
-      name: '',
-      type: 'Diskon Belanja',
-      pointCost: 0,
-      validUntil: '',
-    },
+    defaultValues: { name: '', description: '', costPoints: 0, validUntil: '' },
   })
 
-  const onSubmit = (data: z.output<typeof rewardFormSchema>) => {
-    addRewardItem({
-      ...data,
-      validUntil: new Date(data.validUntil).toISOString(),
-    })
-    toast.success('Item katalog ditambahkan')
-    setAddOpen(false)
-    form.reset()
-  }
+  const createMutation = useMutation({
+    mutationFn: (data: z.output<typeof rewardFormSchema>) =>
+      createCatalogItem({
+        name: data.name,
+        description: data.description,
+        cost_points: data.costPoints,
+        valid_until: data.validUntil || null,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-poin-katalog'] })
+      toast.success('Item katalog ditambahkan')
+      setAddOpen(false)
+      form.reset()
+    },
+    onError: handleServerError,
+  })
 
-  const deleteTarget = catalog.find((c) => c.id === deleteId)
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deleteCatalogItem(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-poin-katalog'] })
+      toast.success('Item katalog dihapus')
+      setDeleteId(null)
+    },
+    onError: handleServerError,
+  })
+
+  const deleteTarget: PointCatalogItem | undefined = catalog.find(
+    (c) => c.id === deleteId
+  )
 
   return (
     <Card>
@@ -103,11 +115,7 @@ export function CatalogCard({ disabled }: { disabled: boolean }) {
               berlakunya.
             </CardDescription>
           </div>
-          <Button
-            size='sm'
-            disabled={disabled}
-            onClick={() => setAddOpen(true)}
-          >
+          <Button size='sm' disabled={disabled} onClick={() => setAddOpen(true)}>
             <Plus className='size-4' /> Tambah Item
           </Button>
         </div>
@@ -118,22 +126,26 @@ export function CatalogCard({ disabled }: { disabled: boolean }) {
             <TableHeader>
               <TableRow>
                 <TableHead>Nama Reward</TableHead>
-                <TableHead>Jenis</TableHead>
                 <TableHead>Biaya Poin</TableHead>
                 <TableHead>Berlaku s.d.</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {catalog.length ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={4} className='h-24 text-center'>
+                    Memuat data...
+                  </TableCell>
+                </TableRow>
+              ) : catalog.length ? (
                 catalog.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell>{item.name}</TableCell>
+                    <TableCell>{item.cost_points.toLocaleString('id-ID')} poin</TableCell>
                     <TableCell>
-                      <Badge variant='outline'>{item.type}</Badge>
+                      {item.valid_until ? formatDate(item.valid_until) : '—'}
                     </TableCell>
-                    <TableCell>{item.pointCost.toLocaleString('id-ID')} poin</TableCell>
-                    <TableCell>{formatDate(item.validUntil)}</TableCell>
                     <TableCell>
                       <Button
                         variant='ghost'
@@ -149,7 +161,7 @@ export function CatalogCard({ disabled }: { disabled: boolean }) {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className='h-24 text-center'>
+                  <TableCell colSpan={4} className='h-24 text-center'>
                     Katalog masih kosong.
                   </TableCell>
                 </TableRow>
@@ -170,7 +182,7 @@ export function CatalogCard({ disabled }: { disabled: boolean }) {
           <Form {...form}>
             <form
               id='reward-form'
-              onSubmit={form.handleSubmit(onSubmit)}
+              onSubmit={form.handleSubmit((data) => createMutation.mutate(data))}
               className='space-y-4'
             >
               <FormField
@@ -188,15 +200,13 @@ export function CatalogCard({ disabled }: { disabled: boolean }) {
               />
               <FormField
                 control={form.control}
-                name='type'
+                name='description'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Jenis</FormLabel>
-                    <SelectDropdown
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
-                      items={REWARD_TYPES.map((t) => ({ label: t, value: t }))}
-                    />
+                    <FormLabel>Deskripsi</FormLabel>
+                    <FormControl>
+                      <Input placeholder='Opsional' {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -204,7 +214,7 @@ export function CatalogCard({ disabled }: { disabled: boolean }) {
               <div className='grid gap-4 sm:grid-cols-2'>
                 <FormField
                   control={form.control}
-                  name='pointCost'
+                  name='costPoints'
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Biaya Poin</FormLabel>
@@ -236,7 +246,7 @@ export function CatalogCard({ disabled }: { disabled: boolean }) {
             </form>
           </Form>
           <DialogFooter>
-            <Button form='reward-form' type='submit'>
+            <Button form='reward-form' type='submit' disabled={createMutation.isPending}>
               Tambah
             </Button>
           </DialogFooter>
@@ -252,10 +262,7 @@ export function CatalogCard({ disabled }: { disabled: boolean }) {
           destructive
           confirmText='Hapus'
           cancelBtnText='Batal'
-          handleConfirm={() => {
-            deleteRewardItem(deleteTarget.id)
-            setDeleteId(null)
-          }}
+          handleConfirm={() => deleteMutation.mutate(deleteTarget.id)}
         />
       )}
     </Card>

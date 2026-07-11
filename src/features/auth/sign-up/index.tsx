@@ -3,54 +3,38 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
 import { AuthLayout } from '../auth-layout'
 import { SignUpForm } from './components/sign-up-form'
 
+/**
+ * Catatan: dashboard web ini untuk pengurus (akun dibuat Administrator lewat
+ * Manajemen Akun Pengurus, bukan self-register). Halaman ini tidak lagi
+ * ditautkan dari alur Masuk utama, dan belum tersambung ke API register
+ * backend (POST /register khusus registrasi anggota untuk mobile app).
+ */
 export function SignUp() {
   return (
     <AuthLayout>
-      <Card className='max-w-sm gap-4'>
+      <Card className='w-full max-w-sm gap-4 shadow-lg'>
         <CardHeader>
-          <CardTitle className='text-lg tracking-tight'>
-            Create an account
-          </CardTitle>
+          <CardTitle className='text-lg tracking-tight'>Buat Akun</CardTitle>
           <CardDescription>
-            Enter your email and password to create an account. <br />
-            Already have an account?{' '}
+            Masukkan email dan password untuk membuat akun. <br />
+            Sudah punya akun?{' '}
             <Link
               to='/sign-in'
               className='underline underline-offset-4 hover:text-primary'
             >
-              Sign In
+              Masuk
             </Link>
           </CardDescription>
         </CardHeader>
         <CardContent>
           <SignUpForm />
         </CardContent>
-        <CardFooter>
-          <p className='px-8 text-center text-sm text-muted-foreground'>
-            By creating an account, you agree to our{' '}
-            <a
-              href='/terms'
-              className='underline underline-offset-4 hover:text-primary'
-            >
-              Terms of Service
-            </a>{' '}
-            and{' '}
-            <a
-              href='/privacy'
-              className='underline underline-offset-4 hover:text-primary'
-            >
-              Privacy Policy
-            </a>
-            .
-          </p>
-        </CardFooter>
       </Card>
     </AuthLayout>
   )

@@ -2,7 +2,7 @@ import { type ColumnDef } from '@tanstack/react-table'
 import { MoreHorizontal, Pencil, Power } from 'lucide-react'
 import { formatDate } from '@/lib/format'
 import { STAFF_ROLE_LABELS, type StaffRole } from '@/config/roles'
-import { type StaffAccount } from '@/stores/accounts-store'
+import { type StaffAccount } from '../api'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {

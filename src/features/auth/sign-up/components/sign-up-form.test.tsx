@@ -4,10 +4,10 @@ import { type Locator, userEvent } from 'vitest/browser'
 import { SignUpForm } from './sign-up-form'
 
 const FORM_MESSAGES = {
-  emailEmpty: 'Please enter your email.',
-  passwordEmpty: 'Please enter your password.',
-  confirmPasswordEmpty: 'Please confirm your password.',
-  passwordMismatch: "Passwords don't match.",
+  emailEmpty: 'Email wajib diisi.',
+  passwordEmpty: 'Password minimal 8 karakter.',
+  confirmPasswordEmpty: 'Konfirmasi password wajib diisi.',
+  passwordMismatch: 'Password tidak cocok.',
 } as const
 
 const toastPromise = vi.hoisted(() =>
@@ -31,8 +31,8 @@ describe('SignUpForm', () => {
     screen = await render(<SignUpForm />)
     emailInput = screen.getByRole('textbox', { name: /^Email$/i })
     passwordInput = screen.getByLabelText(/^Password$/i)
-    confirmPasswordInput = screen.getByLabelText(/^Confirm Password$/i)
-    submitButton = screen.getByRole('button', { name: /^Create Account$/i })
+    confirmPasswordInput = screen.getByLabelText(/^Konfirmasi Password$/i)
+    submitButton = screen.getByRole('button', { name: /^Buat Akun$/i })
   })
 
   afterEach(() => {
@@ -62,8 +62,8 @@ describe('SignUpForm', () => {
 
   it('shows a mismatch error when passwords do not match', async () => {
     await userEvent.fill(emailInput, 'a@b.com')
-    await userEvent.fill(passwordInput, '1234567')
-    await userEvent.fill(confirmPasswordInput, '7654321')
+    await userEvent.fill(passwordInput, '12345678')
+    await userEvent.fill(confirmPasswordInput, '87654321')
 
     await userEvent.click(submitButton)
     await expect
@@ -75,8 +75,8 @@ describe('SignUpForm', () => {
     vi.useFakeTimers()
 
     await userEvent.fill(emailInput, 'a@b.com')
-    await userEvent.fill(passwordInput, '1234567')
-    await userEvent.fill(confirmPasswordInput, '1234567')
+    await userEvent.fill(passwordInput, '12345678')
+    await userEvent.fill(confirmPasswordInput, '12345678')
 
     await userEvent.click(submitButton)
     await expect.element(submitButton).toBeDisabled()

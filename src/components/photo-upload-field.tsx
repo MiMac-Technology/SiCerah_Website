@@ -1,5 +1,6 @@
 import { useId, useRef } from 'react'
 import { ImageUp, X } from 'lucide-react'
+import { API_ORIGIN } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 
@@ -10,6 +11,17 @@ type PhotoUploadFieldProps = {
   description?: string
   disabled?: boolean
   className?: string
+}
+
+/**
+ * `value` bisa berupa data URL (hasil pilih file baru, lihat handleFile) atau
+ * path relatif dari backend Laravel (mis. `logo/xyz.png`, hasil `logo_path`
+ * dari API). Path relatif diarahkan ke storage publik backend
+ * (`API_ORIGIN/storage/...`); URL yang sudah absolut (http/https/data) dipakai apa adanya.
+ */
+function resolvePreviewUrl(value: string): string {
+  if (value.startsWith('data:') || /^https?:\/\//.test(value)) return value
+  return `${API_ORIGIN}/storage/${value.replace(/^\/+/, '')}`
 }
 
 export function PhotoUploadField({
@@ -35,7 +47,7 @@ export function PhotoUploadField({
       {value ? (
         <div className='relative'>
           <img
-            src={value}
+            src={resolvePreviewUrl(value)}
             alt='Pratinjau foto'
             className='size-24 rounded-md border object-cover'
           />

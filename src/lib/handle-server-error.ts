@@ -19,9 +19,11 @@ export function handleServerError(error: unknown) {
   }
 
   if (error instanceof AxiosError) {
-    const title = error.response?.data?.title
-    if (typeof title === 'string' && title.length > 0) {
-      errMsg = title
+    // Backend SiCerah selalu balikin { message, errors? } — lihat storage/api-docs/api-docs.json
+    // di repo backend (ErrorMessage / ValidationErrorResponse schema).
+    const message = error.response?.data?.message
+    if (typeof message === 'string' && message.length > 0) {
+      errMsg = message
     }
   }
 

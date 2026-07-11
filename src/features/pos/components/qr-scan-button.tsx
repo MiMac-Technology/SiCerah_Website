@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { QrCode, ScanLine } from 'lucide-react'
 import { toast } from 'sonner'
-import { useMembersStore } from '@/stores/members-store'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -10,35 +9,43 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { searchMembers, type MemberLookup } from '../api'
 
 /**
  * Simulasi pemindaian QR kartu anggota. Di produksi tombol ini membuka
- * kamera dan membaca QR berisi memberNo; di demo, pemindaian disimulasikan
- * dengan memilih anggota aktif secara acak setelah jeda singkat.
+ * kamera dan membaca QR berisi no_anggota; di demo, pemindaian disimulasikan
+ * dengan memilih anggota aktif secara acak dari hasil pencarian setelah jeda
+ * singkat.
  */
 export function QrScanButton({
   onScanned,
 }: {
-  onScanned: (memberId: string) => void
+  onScanned: (member: MemberLookup) => void
 }) {
-  const members = useMembersStore((s) => s.members)
   const [open, setOpen] = useState(false)
   const [scanning, setScanning] = useState(false)
 
   const simulateScan = () => {
     setScanning(true)
-    setTimeout(() => {
-      const active = members.filter((m) => m.status === 'aktif')
-      const member = active[Math.floor(Math.random() * active.length)]
-      setScanning(false)
-      setOpen(false)
-      if (member) {
-        onScanned(member.id)
-        toast.success(`QR terbaca: ${member.fullName} (${member.memberNo})`)
-      } else {
-        toast.error('Tidak ada anggota aktif')
-      }
-    }, 1200)
+    searchMembers('')
+      .then((members) => {
+        const member = members[Math.floor(Math.random() * members.length)]
+        setTimeout(() => {
+          setScanning(false)
+          setOpen(false)
+          if (member) {
+            onScanned(member)
+            toast.success(`QR terbaca: ${member.name} (${member.memberNo})`)
+          } else {
+            toast.error('Tidak ada anggota aktif')
+          }
+        }, 1200)
+      })
+      .catch(() => {
+        setScanning(false)
+        setOpen(false)
+        toast.error('Gagal memindai QR, coba lagi')
+      })
   }
 
   return (

@@ -1,8 +1,10 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { STAFF_ROLES, STAFF_ROLE_LABELS } from '@/config/roles'
-import { useAccountsStore, type StaffAccount } from '@/stores/accounts-store'
+import { handleServerError } from '@/lib/handle-server-error'
+import { createAccount, updateAccount, type StaffAccount } from '../api'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -13,6 +15,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/password-input'
 import {
   Sheet,
   SheetContent,
@@ -23,8 +26,10 @@ import {
 } from '@/components/ui/sheet'
 import { SelectDropdown } from '@/components/select-dropdown'
 import {
-  staffAccountFormSchema,
-  type StaffAccountFormValues,
+  createStaffAccountFormSchema,
+  updateStaffAccountFormSchema,
+  type CreateStaffAccountFormValues,
+  type UpdateStaffAccountFormValues,
 } from '../data/schema'
 
 type AkunMutateDrawerProps = {
@@ -39,31 +44,52 @@ export function AkunMutateDrawer({
   currentRow,
 }: AkunMutateDrawerProps) {
   const isUpdate = !!currentRow
-  const createAccount = useAccountsStore((s) => s.createAccount)
-  const updateAccount = useAccountsStore((s) => s.updateAccount)
+  const queryClient = useQueryClient()
 
-  const form = useForm<StaffAccountFormValues>({
-    resolver: zodResolver(staffAccountFormSchema),
+  const form = useForm<
+    CreateStaffAccountFormValues | UpdateStaffAccountFormValues
+  >({
+    resolver: zodResolver(
+      isUpdate ? updateStaffAccountFormSchema : createStaffAccountFormSchema
+    ),
     defaultValues: currentRow
       ? {
           name: currentRow.name,
           email: currentRow.email,
           phone: currentRow.phone,
+          nik: currentRow.nik,
+          alamat: currentRow.alamat,
           role: currentRow.role,
         }
-      : { name: '', email: '', phone: '', role: 'kasir' },
+      : {
+          name: '',
+          email: '',
+          phone: '',
+          nik: '',
+          alamat: '',
+          role: 'kasir',
+          password: '',
+        },
   })
 
-  const onSubmit = (data: StaffAccountFormValues) => {
-    if (isUpdate) {
-      updateAccount(currentRow.id, data)
-      toast.success('Akun pengurus diperbarui')
-    } else {
-      createAccount(data)
-      toast.success('Akun pengurus dibuat')
-    }
-    onOpenChange(false)
-    form.reset()
+  const mutation = useMutation({
+    mutationFn: (data: CreateStaffAccountFormValues | UpdateStaffAccountFormValues) =>
+      isUpdate
+        ? updateAccount(currentRow.id, data)
+        : createAccount(data as CreateStaffAccountFormValues),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-akun'] })
+      toast.success(isUpdate ? 'Akun pengurus diperbarui' : 'Akun pengurus dibuat')
+      onOpenChange(false)
+      form.reset()
+    },
+    onError: handleServerError,
+  })
+
+  const onSubmit = (
+    data: CreateStaffAccountFormValues | UpdateStaffAccountFormValues
+  ) => {
+    mutation.mutate(data)
   }
 
   return (
@@ -109,6 +135,47 @@ export function AkunMutateDrawer({
                 </FormItem>
               )}
             />
+            {!isUpdate && (
+              <FormField
+                control={form.control}
+                name='password'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <PasswordInput placeholder='Minimal 8 karakter' {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            <FormField
+              control={form.control}
+              name='nik'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>NIK</FormLabel>
+                  <FormControl>
+                    <Input placeholder='16 digit NIK' {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='alamat'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Alamat</FormLabel>
+                  <FormControl>
+                    <Input placeholder='Alamat lengkap' {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name='phone'
@@ -144,7 +211,7 @@ export function AkunMutateDrawer({
           </form>
         </Form>
         <SheetFooter>
-          <Button form='akun-form' type='submit'>
+          <Button form='akun-form' type='submit' disabled={mutation.isPending}>
             {isUpdate ? 'Simpan Perubahan' : 'Buat Akun'}
           </Button>
         </SheetFooter>

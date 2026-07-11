@@ -1,12 +1,7 @@
 import { type ColumnDef } from '@tanstack/react-table'
 import { Ban, Check, Eye, MoreHorizontal, X } from 'lucide-react'
-import { toast } from 'sonner'
 import { formatCurrency, formatDateTime } from '@/lib/format'
 import { useRole } from '@/context/role-provider'
-import {
-  useTransactionsStore,
-  type Transaction,
-} from '@/stores/transactions-store'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -17,23 +12,30 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { DataTableColumnHeader } from '@/components/data-table'
+import { type BuyerType, type Sale } from '../api'
 import { usePos } from './pos-provider'
 
-const BUYER_TYPE_LABEL: Record<Transaction['buyerType'], string> = {
+const BUYER_TYPE_LABEL: Record<BuyerType, string> = {
   anggota: 'Anggota',
   'non-anggota': 'Non-Anggota',
   'tanpa-ponsel': 'Tanpa Ponsel',
 }
 
-function TrxRowActions({ row }: { row: Transaction }) {
+type VoidActions = {
+  onApproveVoid: (sale: Sale) => void
+  onRejectVoid: (sale: Sale) => void
+}
+
+function TrxRowActions({
+  row,
+  onApproveVoid,
+  onRejectVoid,
+}: { row: Sale } & VoidActions) {
   const { setCurrentTransaction, setOpen } = usePos()
   const { activeRole } = useRole()
-  const resolveVoid = useTransactionsStore((s) => s.resolveVoid)
 
-  const canRequestVoid =
-    activeRole === 'kasir' && (!row.voidStatus || row.voidStatus === 'Ditolak')
-  const canResolveVoid =
-    activeRole === 'bendahara' && row.voidStatus === 'Diminta'
+  const canRequestVoid = activeRole === 'kasir' && !row.voidStatus
+  const canResolveVoid = activeRole === 'bendahara' && row.voidStatus === 'Diminta'
 
   return (
     <DropdownMenu modal={false}>
@@ -69,20 +71,10 @@ function TrxRowActions({ row }: { row: Transaction }) {
         {canResolveVoid && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => {
-                resolveVoid(row.id, true, activeRole)
-                toast.success(`Void ${row.trxNo} disetujui`)
-              }}
-            >
+            <DropdownMenuItem onClick={() => onApproveVoid(row)}>
               <Check className='size-4' /> Setujui Void
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => {
-                resolveVoid(row.id, false, activeRole)
-                toast.info(`Void ${row.trxNo} ditolak`)
-              }}
-            >
+            <DropdownMenuItem onClick={() => onRejectVoid(row)}>
               <X className='size-4' /> Tolak Void
             </DropdownMenuItem>
           </>
@@ -92,7 +84,7 @@ function TrxRowActions({ row }: { row: Transaction }) {
   )
 }
 
-function StatusCell({ trx }: { trx: Transaction }) {
+function StatusCell({ trx }: { trx: Sale }) {
   if (trx.voidStatus === 'Disetujui') {
     return <Badge variant='destructive'>VOID</Badge>
   }
@@ -101,31 +93,21 @@ function StatusCell({ trx }: { trx: Transaction }) {
       {trx.buyerType === 'anggota' ? (
         <Badge>Tercatat</Badge>
       ) : (
-        <Badge
-          variant={
-            trx.waVerificationStatus === 'Terverifikasi'
-              ? 'default'
-              : trx.waVerificationStatus === 'Dikonfirmasi Langsung'
-                ? 'outline'
-                : 'secondary'
-          }
-        >
-          {trx.waVerificationStatus}
+        <Badge variant={trx.signatureUrl ? 'default' : 'secondary'}>
+          {trx.signatureUrl ? 'Sudah Ditandatangani' : 'Menunggu Tanda Tangan'}
         </Badge>
       )}
       {trx.voidStatus === 'Diminta' && (
         <Badge variant='secondary'>Void Diminta</Badge>
       )}
-      {trx.voidStatus === 'Ditolak' && (
-        <Badge variant='outline'>Void Ditolak</Badge>
-      )}
     </div>
   )
 }
 
-export function getPosTransactionColumns(
-  memberNameById: Record<string, string>
-): ColumnDef<Transaction>[] {
+export function getPosTransactionColumns({
+  onApproveVoid,
+  onRejectVoid,
+}: VoidActions): ColumnDef<Sale>[] {
   return [
     {
       accessorKey: 'trxNo',
@@ -148,7 +130,7 @@ export function getPosTransactionColumns(
       id: 'buyer',
       accessorFn: (row) =>
         row.buyerType === 'anggota'
-          ? (memberNameById[row.memberId ?? ''] ?? 'Anggota')
+          ? (row.memberName ?? 'Anggota')
           : (row.buyerName ?? '-'),
       header: 'Pembeli',
       cell: ({ row }) => (
@@ -183,7 +165,13 @@ export function getPosTransactionColumns(
     },
     {
       id: 'actions',
-      cell: ({ row }) => <TrxRowActions row={row.original} />,
+      cell: ({ row }) => (
+        <TrxRowActions
+          row={row.original}
+          onApproveVoid={onApproveVoid}
+          onRejectVoid={onRejectVoid}
+        />
+      ),
     },
   ]
 }

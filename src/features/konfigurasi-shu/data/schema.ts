@@ -1,28 +1,45 @@
 import { z } from 'zod'
 
+/**
+ * Aturan bisnis backend (ShuParameterService::assertPercentagesBalance):
+ * DUA grup persentase terpisah, masing-masing HARUS pas 100 — bukan satu
+ * grup gabungan <=100 seperti versi mock sebelumnya.
+ */
 export const shuConfigFormSchema = z
   .object({
-    koperasiName: z.string().min(1, 'Nama koperasi wajib diisi'),
-    fiscalYear: z.coerce.number().int().min(2000).max(2100),
     jasaModalPct: z.coerce.number().min(0).max(100),
     jasaUsahaPct: z.coerce.number().min(0).max(100),
     cadanganPct: z.coerce.number().min(0).max(100),
-    danaSosialPct: z.coerce.number().min(0).max(100),
+    porsiAnggotaPct: z.coerce.number().min(0).max(100),
     danaPengurusPct: z.coerce.number().min(0).max(100),
-    approvalThreshold: z.coerce.number().positive('Ambang batas harus lebih dari 0'),
+    danaLainPct: z.coerce.number().min(0).max(100),
+  })
+  .refine((data) => Math.abs(data.jasaModalPct + data.jasaUsahaPct - 100) < 0.01, {
+    message: 'Jasa Modal + Jasa Usaha harus berjumlah tepat 100%',
+    path: ['jasaModalPct'],
   })
   .refine(
     (data) =>
-      data.jasaModalPct +
-        data.jasaUsahaPct +
-        data.cadanganPct +
-        data.danaSosialPct +
-        data.danaPengurusPct <=
-      100,
+      Math.abs(
+        data.cadanganPct + data.porsiAnggotaPct + data.danaPengurusPct + data.danaLainPct - 100
+      ) < 0.01,
     {
-      message: 'Total persentase alokasi SHU tidak boleh lebih dari 100%',
-      path: ['jasaModalPct'],
+      message: 'Cadangan + Porsi Anggota + Dana Pengurus + Dana Lain harus berjumlah tepat 100%',
+      path: ['cadanganPct'],
     }
   )
 
 export type ShuConfigFormValues = z.infer<typeof shuConfigFormSchema>
+
+export const fiscalYearFormSchema = z
+  .object({
+    name: z.string().min(1, 'Nama tahun buku wajib diisi'),
+    startDate: z.string().min(1, 'Tanggal mulai wajib diisi'),
+    endDate: z.string().min(1, 'Tanggal selesai wajib diisi'),
+  })
+  .refine((data) => data.endDate > data.startDate, {
+    message: 'Tanggal selesai harus setelah tanggal mulai',
+    path: ['endDate'],
+  })
+
+export type FiscalYearFormValues = z.infer<typeof fiscalYearFormSchema>

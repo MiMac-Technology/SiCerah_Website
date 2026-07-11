@@ -1,15 +1,17 @@
 import { z } from 'zod'
 
 export const cartItemSchema = z.object({
+  productId: z.coerce.number().int().positive('Pilih produk terlebih dahulu'),
   name: z.string().min(1, 'Nama item wajib diisi'),
   qty: z.coerce.number().int().positive('Qty minimal 1'),
-  unitPriceMember: z.coerce.number().positive('Harga harus lebih dari 0'),
+  unitPriceMember: z.coerce.number().nonnegative(),
+  unitPriceNonMember: z.coerce.number().nonnegative(),
 })
 
 export const posFormSchema = z
   .object({
     buyerType: z.enum(['anggota', 'non-anggota', 'tanpa-ponsel']),
-    memberId: z.string().optional(),
+    memberId: z.coerce.number().optional(),
     buyerName: z.string().optional(),
     buyerPhone: z.string().optional(),
     items: z.array(cartItemSchema).min(1, 'Tambahkan minimal 1 item'),

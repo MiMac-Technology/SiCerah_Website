@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Lock, LockOpen } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatDateTime } from '@/lib/format'
-import { useShuConfigStore } from '@/stores/shu-config-store'
+import { handleServerError } from '@/lib/handle-server-error'
+import { closeFiscalYear, lockShuParameter, type FiscalYear } from '../api'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -11,115 +13,101 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 
-export function ParameterLockCard({ isKetua }: { isKetua: boolean }) {
-  const config = useShuConfigStore((s) => s.config)
-  const lockParameters = useShuConfigStore((s) => s.lockParameters)
-  const unlockParameters = useShuConfigStore((s) => s.unlockParameters)
+export function ParameterLockCard({
+  fiscalYear,
+  isKetua,
+}: {
+  fiscalYear: FiscalYear
+  isKetua: boolean
+}) {
+  const queryClient = useQueryClient()
   const [lockOpen, setLockOpen] = useState(false)
-  const [unlockOpen, setUnlockOpen] = useState(false)
-  const [untilLabel, setUntilLabel] = useState(
-    `RAT ${config.fiscalYear + 1}`
-  )
+  const [closeOpen, setCloseOpen] = useState(false)
+  const param = fiscalYear.shu_parameter
+  const locked = param?.is_locked ?? false
+
+  const lockMutation = useMutation({
+    mutationFn: () => lockShuParameter(fiscalYear.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-tahun-buku'] })
+      toast.success('Parameter SHU dikunci pasca-RAT')
+      setLockOpen(false)
+    },
+    onError: handleServerError,
+  })
+
+  const closeMutation = useMutation({
+    mutationFn: () => closeFiscalYear(fiscalYear.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-tahun-buku'] })
+      toast.success('Tahun buku ditutup — SHU final sudah dihitung per anggota')
+      setCloseOpen(false)
+    },
+    onError: handleServerError,
+  })
 
   return (
-    <Card
-      className={config.locked ? 'border-amber-500/50 bg-amber-500/5' : ''}
-    >
+    <Card className={locked ? 'border-amber-500/50 bg-amber-500/5' : ''}>
       <CardHeader>
         <div className='flex flex-wrap items-start justify-between gap-2'>
           <div>
             <CardTitle className='flex items-center gap-2'>
-              {config.locked ? (
+              {locked ? (
                 <Lock className='size-4 text-amber-600 dark:text-amber-400' />
               ) : (
                 <LockOpen className='size-4' />
               )}
-              Lock Parameter Tahunan
+              Lock Parameter Tahunan — {fiscalYear.name}
             </CardTitle>
             <CardDescription>
-              {config.locked
-                ? `Dikunci ${config.lockedBy} pada ${formatDateTime(config.lockedAt!)} — tidak ada pengurus yang dapat mengubah parameter hingga ${config.lockedUntilLabel}.`
-                : 'Setelah RAT, Ketua mengunci parameter SHU & anggaran tahunan agar tidak dapat diubah siapa pun sampai RAT berikutnya.'}
+              {locked
+                ? `Dikunci pada ${formatDateTime(param!.locked_at!)} — parameter tidak bisa diubah. Untuk mengubahnya, tutup tahun buku ini dan buat tahun buku baru.`
+                : 'Setelah RAT, Ketua mengunci parameter SHU agar tidak dapat diubah siapa pun sampai tahun buku ini ditutup.'}
             </CardDescription>
           </div>
-          {isKetua &&
-            (config.locked ? (
-              <Button variant='outline' onClick={() => setUnlockOpen(true)}>
-                <LockOpen className='size-4' /> Buka Kunci (Pasca-RAT)
-              </Button>
-            ) : (
-              <Button onClick={() => setLockOpen(true)}>
-                <Lock className='size-4' /> Kunci Parameter
-              </Button>
-            ))}
+          {isKetua && !locked && (
+            <Button onClick={() => setLockOpen(true)} disabled={!param}>
+              <Lock className='size-4' /> Kunci Parameter
+            </Button>
+          )}
+          {isKetua && locked && fiscalYear.status === 'open' && (
+            <Button variant='outline' onClick={() => setCloseOpen(true)}>
+              Tutup Tahun Buku
+            </Button>
+          )}
         </div>
       </CardHeader>
-      {!isKetua && config.locked && (
+      {!param && (
         <CardContent className='pt-0 text-sm text-muted-foreground'>
-          Hanya Ketua yang dapat membuka kunci ini.
+          Isi dan simpan parameter SHU di bawah terlebih dahulu sebelum bisa dikunci.
+        </CardContent>
+      )}
+      {!isKetua && locked && (
+        <CardContent className='pt-0 text-sm text-muted-foreground'>
+          Hanya Ketua/Admin yang dapat menutup tahun buku ini.
         </CardContent>
       )}
 
-      <Dialog open={lockOpen} onOpenChange={setLockOpen}>
-        <DialogContent className='sm:max-w-sm'>
-          <DialogHeader>
-            <DialogTitle>Kunci Parameter Tahunan?</DialogTitle>
-            <DialogDescription>
-              Parameter SHU dan ambang batas anggaran akan terkunci untuk
-              seluruh pengurus. Aksi ini tercatat di audit trail.
-            </DialogDescription>
-          </DialogHeader>
-          <div className='space-y-2'>
-            <Label htmlFor='until-label'>Berlaku Hingga</Label>
-            <Input
-              id='until-label'
-              value={untilLabel}
-              onChange={(e) => setUntilLabel(e.target.value)}
-              placeholder='cth. RAT 2027'
-            />
-          </div>
-          <DialogFooter>
-            <Button variant='outline' onClick={() => setLockOpen(false)}>
-              Batal
-            </Button>
-            <Button
-              disabled={!untilLabel.trim()}
-              onClick={() => {
-                lockParameters(untilLabel.trim())
-                toast.success('Parameter tahunan dikunci')
-                setLockOpen(false)
-              }}
-            >
-              <Lock className='size-4' /> Kunci
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={lockOpen}
+        onOpenChange={setLockOpen}
+        title='Kunci Parameter Tahunan?'
+        desc='Parameter SHU akan terkunci untuk seluruh pengurus sampai tahun buku ini ditutup. Aksi ini tercatat di audit trail.'
+        confirmText='Kunci'
+        cancelBtnText='Batal'
+        handleConfirm={() => lockMutation.mutate()}
+      />
 
       <ConfirmDialog
-        open={unlockOpen}
-        onOpenChange={setUnlockOpen}
-        title='Buka kunci parameter?'
-        desc='Lakukan hanya setelah RAT berikutnya digelar. Pembukaan kunci tercatat di audit trail.'
-        confirmText='Buka Kunci'
+        open={closeOpen}
+        onOpenChange={setCloseOpen}
+        title='Tutup tahun buku ini?'
+        desc='SHU final akan dihitung untuk setiap anggota berdasarkan parameter yang sudah dikunci. Aksi ini tidak bisa dibatalkan.'
+        confirmText='Tutup Tahun Buku'
         cancelBtnText='Batal'
-        handleConfirm={() => {
-          unlockParameters()
-          toast.success('Kunci parameter dibuka')
-          setUnlockOpen(false)
-        }}
+        handleConfirm={() => closeMutation.mutate()}
       />
     </Card>
   )

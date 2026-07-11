@@ -10,17 +10,17 @@ import {
 import { AuthLayout } from '../auth-layout'
 import { OtpForm } from './components/otp-form'
 
+// Catatan: backend belum punya verifikasi OTP/2FA. Halaman ini masih placeholder UI.
 export function Otp() {
   return (
     <AuthLayout>
-      <Card className='max-w-md gap-4'>
+      <Card className='w-full max-w-md gap-4 shadow-lg'>
         <CardHeader>
           <CardTitle className='text-base tracking-tight'>
-            Two-factor Authentication
+            Verifikasi Dua Langkah
           </CardTitle>
           <CardDescription>
-            Please enter the authentication code. <br /> We have sent the
-            authentication code to your email.
+            Masukkan kode verifikasi. <br /> Kode telah dikirim ke email Anda.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -28,14 +28,13 @@ export function Otp() {
         </CardContent>
         <CardFooter>
           <p className='px-8 text-center text-sm text-muted-foreground'>
-            Haven't received it?{' '}
+            Belum menerima kode?{' '}
             <Link
               to='/sign-in'
               className='underline underline-offset-4 hover:text-primary'
             >
-              Resend a new code.
+              Kirim ulang kode.
             </Link>
-            .
           </p>
         </CardFooter>
       </Card>

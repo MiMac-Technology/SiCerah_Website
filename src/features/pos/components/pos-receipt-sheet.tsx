@@ -1,9 +1,9 @@
-import { MessageCircle, ShieldCheck } from 'lucide-react'
+import { CheckCircle2, MessageCircle } from 'lucide-react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { formatCurrency, formatDateTime } from '@/lib/format'
+import { handleServerError } from '@/lib/handle-server-error'
 import { buildWaLink } from '@/lib/whatsapp'
-import { useRole } from '@/context/role-provider'
-import { useMembersStore } from '@/stores/members-store'
-import { useTransactionsStore } from '@/stores/transactions-store'
+import { SignaturePadField } from '@/components/signature-pad-field'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -15,11 +15,17 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { signSale } from '../api'
 import { usePos } from './pos-provider'
 
 function buildReceiptText(
   trxNo: string,
-  items: { name: string; qty: number; unitPriceMember: number; unitPriceNonMember: number }[],
+  items: {
+    name: string
+    qty: number
+    unitPriceMember: number
+    unitPriceNonMember: number
+  }[],
   totalMember: number,
   totalNonMember: number
 ) {
@@ -38,23 +44,28 @@ function buildReceiptText(
 }
 
 export function PosReceiptSheet() {
-  const { open, setOpen, currentTransaction } = usePos()
-  const { activeRole } = useRole()
-  const simulateWaVerification = useTransactionsStore(
-    (s) => s.simulateWaVerification
-  )
-  const members = useMembersStore((s) => s.members)
+  const { open, setOpen, currentTransaction, setCurrentTransaction } = usePos()
+  const queryClient = useQueryClient()
+
+  const signMutation = useMutation({
+    mutationFn: (dataUrl: string) => signSale(currentTransaction!.id, dataUrl),
+    onSuccess: (sale) => {
+      queryClient.invalidateQueries({ queryKey: ['pos', 'penjualan'] })
+      setCurrentTransaction(sale)
+    },
+    onError: handleServerError,
+  })
 
   if (!currentTransaction) return null
   const trx = currentTransaction
-  const member = trx.memberId ? members.find((m) => m.id === trx.memberId) : undefined
   const receiptText = buildReceiptText(
     trx.trxNo,
     trx.items,
     trx.totalMember,
     trx.totalNonMember
   )
-  const waTargetPhone = trx.buyerType === 'anggota' ? member?.phone : trx.buyerPhone
+  const waTargetPhone =
+    trx.buyerType === 'anggota' ? trx.memberPhone : trx.buyerPhone
 
   return (
     <Sheet
@@ -98,22 +109,33 @@ export function PosReceiptSheet() {
 
           {trx.buyerType === 'anggota' ? (
             <div className='flex flex-wrap gap-2'>
-              <Badge>Kontribusi (U): {formatCurrency(trx.kontribusiU ?? 0)}</Badge>
+              <Badge>
+                Kontribusi (U): {formatCurrency(trx.kontribusiU ?? 0)}
+              </Badge>
               <Badge variant='secondary'>
                 KopPoin +{trx.kopPoinEarned ?? 0}
               </Badge>
             </div>
           ) : (
-            <div className='flex items-center gap-2'>
-              <Badge
-                variant={
-                  trx.waVerificationStatus === 'Terverifikasi'
-                    ? 'default'
-                    : 'secondary'
-                }
-              >
-                {trx.waVerificationStatus}
-              </Badge>
+            <div className='space-y-2'>
+              <p className='text-sm font-medium'>Tanda Tangan Pembeli</p>
+              {trx.signatureUrl ? (
+                <div className='flex items-center gap-3'>
+                  <img
+                    src={trx.signatureUrl}
+                    alt='Tanda tangan pembeli'
+                    className='h-20 rounded-md border bg-white object-contain'
+                  />
+                  <Badge>
+                    <CheckCircle2 className='size-3.5' /> Sudah Ditandatangani
+                  </Badge>
+                </div>
+              ) : (
+                <SignaturePadField
+                  disabled={signMutation.isPending}
+                  onSave={(dataUrl) => signMutation.mutate(dataUrl)}
+                />
+              )}
             </div>
           )}
         </div>
@@ -129,33 +151,6 @@ export function PosReceiptSheet() {
                 <MessageCircle className='size-4' /> Kirim Struk WA
               </a>
             </Button>
-          )}
-          {trx.buyerType === 'non-anggota' && (
-            <>
-              <Button asChild variant='outline'>
-                <a
-                  href={buildWaLink(
-                    trx.buyerPhone ?? '',
-                    `Halo ${trx.buyerName ?? ''}, mohon konfirmasi transaksi ${trx.trxNo} senilai ${formatCurrency(trx.totalCharged)} di Koperasi kami dengan membalas pesan ini "YA".`
-                  )}
-                  target='_blank'
-                  rel='noreferrer'
-                >
-                  <MessageCircle className='size-4' /> Kirim Konfirmasi WA
-                </a>
-              </Button>
-              {trx.waVerificationStatus !== 'Terverifikasi' && (
-                <Button
-                  variant='secondary'
-                  onClick={() =>
-                    simulateWaVerification(trx.id, activeRole)
-                  }
-                >
-                  <ShieldCheck className='size-4' /> Simulasikan Konfirmasi
-                  Diterima
-                </Button>
-              )}
-            </>
           )}
         </SheetFooter>
       </SheetContent>
